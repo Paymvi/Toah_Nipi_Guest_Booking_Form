@@ -114,6 +114,127 @@ const INITIAL_FORM = {
 };
 
 
+
+/* =========================================================
+   TEST DATA
+   Development helper only. This fills the form but does not
+   submit anything until the normal Submit Group Form button
+   is pressed.
+========================================================= */
+
+function createTestFormData() {
+  return {
+    ...INITIAL_FORM,
+
+    /* Guest Group */
+    organizationName: "000000000000000Test Community Church",
+    contactName: "Jordan Test",
+    startDate: "2027-06-18",
+    arrivalTime: "16:00",
+    endDate: "2027-06-20",
+    departureTime: "13:00",
+    phone: "603-555-0147",
+    email: "jordan.test@example.com",
+    mailingAddress:
+      "123 Test Street, Nashua, NH 03060",
+
+    /* Approximate Guests */
+    approxTotalGuests: "50",
+    approxAdultGuests: "32",
+    approxChildren3to17: "15",
+    approxChildrenUnder3: "3",
+
+    /* Documents / Payment */
+    contractReturnedDate: "2027-05-15",
+    depositSentDate: "2027-05-16",
+    depositAmount: "250",
+    insuranceCertificateSentDate:
+      "2027-06-01",
+    paymentMethod: "Check",
+
+    /* Meals */
+    mealSchedule: {
+      "2027-06-18": {
+        breakfast: false,
+        lunch: false,
+        dinner: true,
+      },
+
+      "2027-06-19": {
+        breakfast: true,
+        lunch: true,
+        dinner: true,
+      },
+
+      "2027-06-20": {
+        breakfast: true,
+        lunch: true,
+        dinner: false,
+      },
+    },
+
+    breakfastTime: "08:00",
+    lunchTime: "12:00",
+    dinnerTime: "18:00",
+
+    allergies: [
+      {
+        count: "2",
+        name: "Gluten Free",
+      },
+      {
+        count: "1",
+        name: "Peanut Allergy",
+      },
+      {
+        count: "1",
+        name: "Dairy Free",
+      },
+    ],
+
+    allergyNotes:
+      "Peanut allergy is severe. Please avoid cross-contamination.",
+
+    mealNotes:
+      "Saturday dinner may need to be served at 5:30 PM because of the evening activity.",
+
+    /* Activities */
+    activities: [
+      {
+        date: "2027-06-19",
+        time: "14:00",
+        activity:
+          "Hebron: Rock Wall",
+      },
+      {
+        date: "2027-06-19",
+        time: "19:30",
+        activity:
+          "Fire Pit",
+      },
+      {
+        date: "2027-06-20",
+        time: "09:30",
+        activity:
+          "Kayaking",
+      },
+    ],
+
+    /* Linens */
+    linenOption: "Some",
+    linenSets: "12",
+    linenPieces: "6",
+
+    /* Notes */
+    notes:
+      "TEST SUBMISSION — This is fake development data. The group is interested in flexible meeting space and may update final attendance later.",
+
+    /* Spam honeypot must stay empty */
+    website: "",
+  };
+}
+
+
 /* =========================================================
    DATE / TOTAL HELPERS
 ========================================================= */
@@ -448,6 +569,25 @@ export default function App() {
         formData.approxChildrenUnder3,
       ]
     );
+
+
+  /* =======================================================
+     TEST DATA HELPER
+  ======================================================= */
+
+  const populateTestData = () => {
+    setFormData(
+      createTestFormData()
+    );
+
+    setValidationErrors([]);
+    setSubmitError("");
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  };
 
 
   /* =======================================================
@@ -1144,6 +1284,36 @@ export default function App() {
             </p>
           </div>
         </header>
+
+
+        {/* ===================================================
+            DEVELOPMENT TEST TOOL
+            Separate from the real form submit button.
+        =================================================== */}
+
+        <div className="guest-test-toolbar">
+          <div className="guest-test-toolbar-copy">
+            <strong>
+              Testing the form?
+            </strong>
+
+            <span>
+              Fill every section with fake
+              data in one click. Nothing is
+              submitted automatically.
+            </span>
+          </div>
+
+          <button
+            type="button"
+            className="guest-test-data-button"
+            onClick={
+              populateTestData
+            }
+          >
+            Populate Test Data
+          </button>
+        </div>
 
 
         <form
