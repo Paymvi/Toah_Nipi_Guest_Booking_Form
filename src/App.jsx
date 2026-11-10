@@ -1289,8 +1289,10 @@ export default function App() {
         {/* ===================================================
             DEVELOPMENT TEST TOOL
             Separate from the real form submit button.
+            Development builds only, so guests never see it.
         =================================================== */}
 
+        {import.meta.env.DEV && (
         <div className="guest-test-toolbar">
           <div className="guest-test-toolbar-copy">
             <strong>
@@ -1314,6 +1316,7 @@ export default function App() {
             Populate Test Data
           </button>
         </div>
+        )}
 
 
         <form
