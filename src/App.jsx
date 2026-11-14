@@ -1,4 +1,18 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
+import {
+  BLANK_ROWS,
+  INITIAL_FORM,
+  MAX_STAY_DAYS,
+  MEAL_TYPES,
+  buildPayload,
+  createTestFormData,
+  formatMealDate,
+  getGuestBreakdownTotal,
+  getMealTotals,
+  getStayDates,
+  getStayMealSchedule,
+  validateForm,
+} from "./formLogic";
 import "./App.css";
 
 /* =========================================================
@@ -29,469 +43,6 @@ const ACTIVITY_OPTIONS = [
   "Kayaking",
   "Other",
 ];
-
-const MEAL_TYPES = [
-  {
-    key: "breakfast",
-    label: "Breakfast",
-    shortLabel: "B",
-  },
-  {
-    key: "lunch",
-    label: "Lunch",
-    shortLabel: "L",
-  },
-  {
-    key: "dinner",
-    label: "Dinner",
-    shortLabel: "D",
-  },
-];
-
-
-/* =========================================================
-   INITIAL FORM
-========================================================= */
-
-const INITIAL_FORM = {
-  /* Guest Group */
-  organizationName: "",
-  contactName: "",
-  startDate: "",
-  arrivalTime: "",
-  endDate: "",
-  departureTime: "",
-  phone: "",
-  email: "",
-  mailingAddress: "",
-
-  /* Approximate Guests */
-  approxTotalGuests: "",
-  approxAdultGuests: "",
-  approxChildren3to17: "",
-  approxChildrenUnder3: "",
-
-  /* Documents / Payment */
-  contractReturnedDate: "",
-  depositSentDate: "",
-  depositAmount: "",
-  insuranceCertificateSentDate: "",
-  paymentMethod: "",
-
-  /* Meals */
-  mealSchedule: {},
-  breakfastTime: "",
-  lunchTime: "",
-  dinnerTime: "",
-  allergies: [
-    {
-      count: "",
-      name: "",
-    },
-  ],
-  allergyNotes: "",
-  mealNotes: "",
-
-  /* Activities */
-  activities: [
-    {
-      date: "",
-      time: "",
-      activity: "",
-    },
-  ],
-
-  /* Linens */
-  linenOption: "No",
-  linenSets: "",
-  linenPieces: "",
-
-  /* Notes */
-  notes: "",
-
-  /* Spam honeypot */
-  website: "",
-};
-
-
-
-/* =========================================================
-   TEST DATA
-   Development helper only. This fills the form but does not
-   submit anything until the normal Submit Group Form button
-   is pressed.
-========================================================= */
-
-function createTestFormData() {
-  return {
-    ...INITIAL_FORM,
-
-    /* Guest Group */
-    organizationName: "000000000000000Test Community Church",
-    contactName: "Jordan Test",
-    startDate: "2027-06-18",
-    arrivalTime: "16:00",
-    endDate: "2027-06-20",
-    departureTime: "13:00",
-    phone: "603-555-0147",
-    email: "jordan.test@example.com",
-    mailingAddress:
-      "123 Test Street, Nashua, NH 03060",
-
-    /* Approximate Guests */
-    approxTotalGuests: "50",
-    approxAdultGuests: "32",
-    approxChildren3to17: "15",
-    approxChildrenUnder3: "3",
-
-    /* Documents / Payment */
-    contractReturnedDate: "2027-05-15",
-    depositSentDate: "2027-05-16",
-    depositAmount: "250",
-    insuranceCertificateSentDate:
-      "2027-06-01",
-    paymentMethod: "Check",
-
-    /* Meals */
-    mealSchedule: {
-      "2027-06-18": {
-        breakfast: false,
-        lunch: false,
-        dinner: true,
-      },
-
-      "2027-06-19": {
-        breakfast: true,
-        lunch: true,
-        dinner: true,
-      },
-
-      "2027-06-20": {
-        breakfast: true,
-        lunch: true,
-        dinner: false,
-      },
-    },
-
-    breakfastTime: "08:00",
-    lunchTime: "12:00",
-    dinnerTime: "18:00",
-
-    allergies: [
-      {
-        count: "2",
-        name: "Gluten Free",
-      },
-      {
-        count: "1",
-        name: "Peanut Allergy",
-      },
-      {
-        count: "1",
-        name: "Dairy Free",
-      },
-    ],
-
-    allergyNotes:
-      "Peanut allergy is severe. Please avoid cross-contamination.",
-
-    mealNotes:
-      "Saturday dinner may need to be served at 5:30 PM because of the evening activity.",
-
-    /* Activities */
-    activities: [
-      {
-        date: "2027-06-19",
-        time: "14:00",
-        activity:
-          "Hebron: Rock Wall",
-      },
-      {
-        date: "2027-06-19",
-        time: "19:30",
-        activity:
-          "Fire Pit",
-      },
-      {
-        date: "2027-06-20",
-        time: "09:30",
-        activity:
-          "Kayaking",
-      },
-    ],
-
-    /* Linens */
-    linenOption: "Some",
-    linenSets: "12",
-    linenPieces: "6",
-
-    /* Notes */
-    notes:
-      "TEST SUBMISSION — This is fake development data. The group is interested in flexible meeting space and may update final attendance later.",
-
-    /* Spam honeypot must stay empty */
-    website: "",
-  };
-}
-
-
-/* =========================================================
-   DATE / TOTAL HELPERS
-========================================================= */
-
-function parseDateInputAsUTC(value) {
-  if (!value) {
-    return null;
-  }
-
-  const parsed = new Date(`${value}T00:00:00Z`);
-
-  if (Number.isNaN(parsed.getTime())) {
-    return null;
-  }
-
-  return parsed;
-}
-
-
-function getStayDates(startDate, endDate) {
-  const start = parseDateInputAsUTC(startDate);
-  const end = parseDateInputAsUTC(endDate);
-
-  if (!start || !end || end < start) {
-    return [];
-  }
-
-  const dates = [];
-  const current = new Date(start);
-
-  while (current <= end) {
-    dates.push(current.toISOString().slice(0, 10));
-    current.setUTCDate(current.getUTCDate() + 1);
-  }
-
-  return dates;
-}
-
-
-function getNumberOfNights(startDate, endDate) {
-  const start = parseDateInputAsUTC(startDate);
-  const end = parseDateInputAsUTC(endDate);
-
-  if (!start || !end || end < start) {
-    return "";
-  }
-
-  const millisecondsPerDay =
-    1000 * 60 * 60 * 24;
-
-  return String(
-    Math.round(
-      (end.getTime() - start.getTime()) /
-        millisecondsPerDay
-    )
-  );
-}
-
-
-function formatMealDate(value) {
-  const parsed = parseDateInputAsUTC(value);
-
-  if (!parsed) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    timeZone: "UTC",
-  }).format(parsed);
-}
-
-
-function getMealTotals(formData) {
-  const totals = {
-    breakfast: 0,
-    lunch: 0,
-    dinner: 0,
-    total: 0,
-  };
-
-  Object.values(formData.mealSchedule || {}).forEach(
-    (day) => {
-      MEAL_TYPES.forEach((meal) => {
-        if (day?.[meal.key]) {
-          totals[meal.key] += 1;
-          totals.total += 1;
-        }
-      });
-    }
-  );
-
-  return totals;
-}
-
-
-function getGuestBreakdownTotal(formData) {
-  const values = [
-    formData.approxAdultGuests,
-    formData.approxChildren3to17,
-    formData.approxChildrenUnder3,
-  ];
-
-  const hasAnyValue =
-    values.some(
-      (value) =>
-        String(value ?? "").trim() !== ""
-    );
-
-  if (!hasAnyValue) {
-    return null;
-  }
-
-  return values.reduce(
-    (total, value) =>
-      total + Number(value || 0),
-    0
-  );
-}
-
-
-/* =========================================================
-   VALIDATION
-========================================================= */
-
-function validateForm(formData) {
-  const errors = [];
-
-  if (!formData.organizationName.trim()) {
-    errors.push(
-      "Guest Group Name is required."
-    );
-  }
-
-  if (!formData.contactName.trim()) {
-    errors.push(
-      "Primary Contact is required."
-    );
-  }
-
-  if (!formData.startDate) {
-    errors.push(
-      "Arrival date is required."
-    );
-  }
-
-  if (!formData.endDate) {
-    errors.push(
-      "Departure date is required."
-    );
-  }
-
-  if (
-    formData.startDate &&
-    formData.endDate &&
-    formData.endDate < formData.startDate
-  ) {
-    errors.push(
-      "Departure date cannot be before the arrival date."
-    );
-  }
-
-  if (!formData.email.trim()) {
-    errors.push(
-      "Email is required."
-    );
-  }
-
-  if (!formData.phone.trim()) {
-    errors.push(
-      "Phone is required."
-    );
-  }
-
-  const totalGuests =
-    Number(formData.approxTotalGuests);
-
-  if (
-    !String(
-      formData.approxTotalGuests
-    ).trim() ||
-    !Number.isFinite(totalGuests) ||
-    totalGuests < 1
-  ) {
-    errors.push(
-      "Estimated Total Guests must be at least 1."
-    );
-  }
-
-  const nonNegativeWholeNumberFields = [
-    {
-      label: "Adults",
-      value: formData.approxAdultGuests,
-    },
-    {
-      label: "Children ages 3–17",
-      value: formData.approxChildren3to17,
-    },
-    {
-      label: "Children under 3",
-      value: formData.approxChildrenUnder3,
-    },
-    {
-      label: "# of Full Linen Sets",
-      value: formData.linenSets,
-    },
-    {
-      label: "# of Linen Pieces",
-      value: formData.linenPieces,
-    },
-  ];
-
-  nonNegativeWholeNumberFields.forEach(
-    ({ label, value }) => {
-      const text =
-        String(value ?? "").trim();
-
-      if (!text) {
-        return;
-      }
-
-      const number = Number(text);
-
-      if (
-        !Number.isInteger(number) ||
-        number < 0
-      ) {
-        errors.push(
-          `${label} must be a whole number of 0 or greater.`
-        );
-      }
-    }
-  );
-
-  if (
-    String(
-      formData.depositAmount ?? ""
-    ).trim()
-  ) {
-    const deposit =
-      Number(formData.depositAmount);
-
-    if (
-      !Number.isFinite(deposit) ||
-      deposit < 0
-    ) {
-      errors.push(
-        "Deposit Amount cannot be negative."
-      );
-    }
-  }
-
-  return errors;
-}
-
 
 /* =========================================================
    APP
@@ -524,51 +75,12 @@ export default function App() {
   ] = useState(false);
 
 
-  const stayDates = useMemo(
-    () =>
-      getStayDates(
-        formData.startDate,
-        formData.endDate
-      ),
-    [
-      formData.startDate,
-      formData.endDate,
-    ]
+  const stayDates = getStayDates(formData.startDate, formData.endDate);
+  const numberOfNights = stayDates.length > 0 ? stayDates.length - 1 : null;
+  const mealTotals = getMealTotals(
+    getStayMealSchedule(formData.mealSchedule, stayDates)
   );
-
-
-  const numberOfNights = useMemo(
-    () =>
-      getNumberOfNights(
-        formData.startDate,
-        formData.endDate
-      ),
-    [
-      formData.startDate,
-      formData.endDate,
-    ]
-  );
-
-
-  const mealTotals = useMemo(
-    () =>
-      getMealTotals(formData),
-    [formData.mealSchedule]
-  );
-
-
-  const guestBreakdownTotal =
-    useMemo(
-      () =>
-        getGuestBreakdownTotal(
-          formData
-        ),
-      [
-        formData.approxAdultGuests,
-        formData.approxChildren3to17,
-        formData.approxChildrenUnder3,
-      ]
-    );
+  const guestBreakdownTotal = getGuestBreakdownTotal(formData);
 
 
   /* =======================================================
@@ -595,56 +107,13 @@ export default function App() {
   ======================================================= */
 
   const handleChange = (event) => {
-    const {
-      name,
-      value,
-    } = event.target;
+    const { name, value } = event.target;
 
     setFormData((current) => {
-      const updated = {
-        ...current,
-        [name]: value,
-      };
+      const updated = { ...current, [name]: value };
 
-      /*
-        If dates change, keep meal selections
-        only for dates still inside the stay.
-      */
-      if (
-        name === "startDate" ||
-        name === "endDate"
-      ) {
-        const nextDates =
-          getStayDates(
-            updated.startDate,
-            updated.endDate
-          );
-
-        const nextSchedule = {};
-
-        nextDates.forEach((date) => {
-          if (
-            current.mealSchedule?.[date]
-          ) {
-            nextSchedule[date] =
-              current.mealSchedule[
-                date
-              ];
-          }
-        });
-
-        updated.mealSchedule =
-          nextSchedule;
-      }
-
-      /*
-        No linens means the quantity fields
-        should be empty too.
-      */
-      if (
-        name === "linenOption" &&
-        value === "No"
-      ) {
+      // No linens means the quantity fields should be empty too.
+      if (name === "linenOption" && value === "No") {
         updated.linenSets = "";
         updated.linenPieces = "";
       }
@@ -652,15 +121,8 @@ export default function App() {
       return updated;
     });
 
-    if (
-      validationErrors.length > 0
-    ) {
-      setValidationErrors([]);
-    }
-
-    if (submitError) {
-      setSubmitError("");
-    }
+    // The validation list stays until the next submit, so guests can work through it.
+    if (submitError) setSubmitError("");
   };
 
 
@@ -703,140 +165,33 @@ export default function App() {
 
 
   /* =======================================================
-     ALLERGIES
+     ALLERGY / ACTIVITY ROWS
+     list is "allergies" or "activities".
   ======================================================= */
 
-  const handleAllergyChange = (
-    index,
-    field,
-    value
-  ) => {
-    setFormData((current) => {
-      const allergies = [
-        ...current.allergies,
-      ];
-
-      allergies[index] = {
-        ...allergies[index],
-        [field]: value,
-      };
-
-      return {
-        ...current,
-        allergies,
-      };
-    });
-  };
-
-
-  const addAllergy = () => {
+  const updateRow = (list, index, field, value) => {
     setFormData((current) => ({
       ...current,
-
-      allergies: [
-        ...current.allergies,
-        {
-          count: "",
-          name: "",
-        },
-      ],
+      [list]: current[list].map((row, rowIndex) =>
+        rowIndex === index ? { ...row, [field]: value } : row
+      ),
     }));
   };
 
-
-  const removeAllergy = (
-    index
-  ) => {
-    setFormData((current) => {
-      const allergies =
-        current.allergies.filter(
-          (_, allergyIndex) =>
-            allergyIndex !== index
-        );
-
-      return {
-        ...current,
-
-        allergies:
-          allergies.length > 0
-            ? allergies
-            : [
-                {
-                  count: "",
-                  name: "",
-                },
-              ],
-      };
-    });
-  };
-
-
-  /* =======================================================
-     ACTIVITIES
-  ======================================================= */
-
-  const handleActivityChange = (
-    index,
-    field,
-    value
-  ) => {
-    setFormData((current) => {
-      const activities = [
-        ...current.activities,
-      ];
-
-      activities[index] = {
-        ...activities[index],
-        [field]: value,
-      };
-
-      return {
-        ...current,
-        activities,
-      };
-    });
-  };
-
-
-  const addActivity = () => {
+  const addRow = (list) => {
     setFormData((current) => ({
       ...current,
-
-      activities: [
-        ...current.activities,
-        {
-          date: "",
-          time: "",
-          activity: "",
-        },
-      ],
+      [list]: [...current[list], { ...BLANK_ROWS[list] }],
     }));
   };
 
-
-  const removeActivity = (
-    index
-  ) => {
+  // Each list always keeps one row so its inputs never disappear.
+  const removeRow = (list, index) => {
     setFormData((current) => {
-      const activities =
-        current.activities.filter(
-          (_, activityIndex) =>
-            activityIndex !== index
-        );
-
+      const rows = current[list].filter((_, rowIndex) => rowIndex !== index);
       return {
         ...current,
-
-        activities:
-          activities.length > 0
-            ? activities
-            : [
-                {
-                  date: "",
-                  time: "",
-                  activity: "",
-                },
-              ],
+        [list]: rows.length > 0 ? rows : [{ ...BLANK_ROWS[list] }],
       };
     });
   };
@@ -893,189 +248,7 @@ export default function App() {
       return;
     }
 
-    const cleanedAllergies =
-      formData.allergies
-        .filter(
-          (allergy) =>
-            String(
-              allergy.name || ""
-            ).trim() ||
-            String(
-              allergy.count || ""
-            ).trim()
-        )
-        .map((allergy) => ({
-          count:
-            allergy.count === ""
-              ? null
-              : Number(
-                  allergy.count
-                ),
-
-          name: String(
-            allergy.name || ""
-          ).trim(),
-        }));
-
-    const cleanedActivities =
-      formData.activities
-        .filter(
-          (activity) =>
-            activity.date ||
-            activity.time ||
-            activity.activity
-        )
-        .map((activity) => ({
-          date:
-            activity.date,
-
-          time:
-            activity.time,
-
-          activity:
-            activity.activity,
-        }));
-
-    /*
-      These names are deliberately close to
-      the staff CreateBooking field names so
-      converting an approved inquiry later
-      is straightforward.
-    */
-    const payload = {
-      organizationName:
-        formData.organizationName.trim(),
-
-      contactName:
-        formData.contactName.trim(),
-
-      startDate:
-        formData.startDate,
-
-      arrivalTime:
-        formData.arrivalTime,
-
-      endDate:
-        formData.endDate,
-
-      departureTime:
-        formData.departureTime,
-
-      phone:
-        formData.phone.trim(),
-
-      email:
-        formData.email.trim(),
-
-      mailingAddress:
-        formData.mailingAddress.trim(),
-
-      approxTotalGuests:
-        Number(
-          formData.approxTotalGuests
-        ),
-
-      approxAdultGuests:
-        formData.approxAdultGuests === ""
-          ? null
-          : Number(
-              formData.approxAdultGuests
-            ),
-
-      approxChildren3to17:
-        formData.approxChildren3to17 === ""
-          ? null
-          : Number(
-              formData.approxChildren3to17
-            ),
-
-      approxChildrenUnder3:
-        formData.approxChildrenUnder3 === ""
-          ? null
-          : Number(
-              formData.approxChildrenUnder3
-            ),
-
-      numberOfNights:
-        numberOfNights
-          ? Number(
-              numberOfNights
-            )
-          : null,
-
-      contractReturnedDate:
-        formData.contractReturnedDate,
-
-      /*
-        Guest terminology:
-        "sent", not "received".
-
-        Staff can review these before
-        converting the inquiry.
-      */
-      depositSentDate:
-        formData.depositSentDate,
-
-      depositAmount:
-        formData.depositAmount === ""
-          ? null
-          : Number(
-              formData.depositAmount
-            ),
-
-      insuranceCertificateSentDate:
-        formData.insuranceCertificateSentDate,
-
-      paymentMethod:
-        formData.paymentMethod,
-
-      mealSchedule:
-        formData.mealSchedule,
-
-      numberOfMeals:
-        mealTotals.total,
-
-      breakfastTime:
-        formData.breakfastTime,
-
-      lunchTime:
-        formData.lunchTime,
-
-      dinnerTime:
-        formData.dinnerTime,
-
-      allergies:
-        cleanedAllergies,
-
-      allergyNotes:
-        formData.allergyNotes.trim(),
-
-      mealNotes:
-        formData.mealNotes.trim(),
-
-      activities:
-        cleanedActivities,
-
-      linenOption:
-        formData.linenOption,
-
-      linenSets:
-        formData.linenSets === ""
-          ? null
-          : Number(
-              formData.linenSets
-            ),
-
-      linenPieces:
-        formData.linenPieces === ""
-          ? null
-          : Number(
-              formData.linenPieces
-            ),
-
-      notes:
-        formData.notes.trim(),
-    };
+    const payload = buildPayload(formData);
 
 
     try {
@@ -1083,23 +256,13 @@ export default function App() {
       setSubmitError("");
       setValidationErrors([]);
 
-      const response =
-        await fetch(
-          endpoint,
-          {
-            method: "POST",
-
-            headers: {
-              "Content-Type":
-                "application/json",
-            },
-
-            body:
-              JSON.stringify(
-                payload
-              ),
-          }
-        );
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        // Without a time limit, a server that never answers leaves the button stuck on "Sending...".
+        signal: AbortSignal.timeout(15000),
+      });
 
       let responseBody = null;
 
@@ -1135,8 +298,10 @@ export default function App() {
       );
 
       setSubmitError(
-        error?.message ||
-          "Your retreat request could not be submitted. Please try again."
+        error?.name === "TimeoutError"
+          ? "The server took too long to answer. Please try again."
+          : error?.message ||
+              "Your retreat request could not be submitted. Please try again."
       );
 
       window.scrollTo({
@@ -1827,7 +992,7 @@ export default function App() {
 
                     <strong>
                       {
-                        numberOfNights ||
+                        numberOfNights ??
                         "—"
                       }
                     </strong>
@@ -2086,8 +1251,9 @@ export default function App() {
                 ) : stayDates.length ===
                   0 ? (
                   <div className="guest-empty-state">
-                    Departure must be
-                    on or after arrival.
+                    {formData.endDate < formData.startDate
+                      ? "Departure must be on or after arrival."
+                      : `Stays can be at most ${MAX_STAY_DAYS} days. Please check the dates.`}
                   </div>
                 ) : (
                   <div className="guest-meal-table-wrap">
@@ -2342,7 +1508,7 @@ export default function App() {
                           onChange={(
                             event
                           ) =>
-                            handleAllergyChange(
+                            updateRow("allergies",
                               index,
                               "count",
                               event
@@ -2362,7 +1528,7 @@ export default function App() {
                           onChange={(
                             event
                           ) =>
-                            handleAllergyChange(
+                            updateRow("allergies",
                               index,
                               "name",
                               event
@@ -2383,7 +1549,7 @@ export default function App() {
                               type="button"
                               className="guest-remove-button"
                               onClick={() =>
-                                removeAllergy(
+                                removeRow("allergies",
                                   index
                                 )
                               }
@@ -2404,7 +1570,7 @@ export default function App() {
                   type="button"
                   className="guest-add-button"
                   onClick={
-                    addAllergy
+                    () => addRow("allergies")
                   }
                 >
                   + Add another allergy
@@ -2531,7 +1697,7 @@ export default function App() {
                         onChange={(
                           event
                         ) =>
-                          handleActivityChange(
+                          updateRow("activities",
                             index,
                             "date",
                             event
@@ -2551,7 +1717,7 @@ export default function App() {
                         onChange={(
                           event
                         ) =>
-                          handleActivityChange(
+                          updateRow("activities",
                             index,
                             "time",
                             event
@@ -2570,7 +1736,7 @@ export default function App() {
                         onChange={(
                           event
                         ) =>
-                          handleActivityChange(
+                          updateRow("activities",
                             index,
                             "activity",
                             event
@@ -2614,7 +1780,7 @@ export default function App() {
                             type="button"
                             className="guest-remove-button"
                             onClick={() =>
-                              removeActivity(
+                              removeRow("activities",
                                 index
                               )
                             }
@@ -2636,7 +1802,7 @@ export default function App() {
                 type="button"
                 className="guest-add-button"
                 onClick={
-                  addActivity
+                  () => addRow("activities")
                 }
               >
                 + Add another activity
