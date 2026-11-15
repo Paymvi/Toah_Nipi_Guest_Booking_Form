@@ -13,6 +13,7 @@ import {
   getStayMealSchedule,
   validateForm,
 } from "./formLogic";
+import ThemeToggle from "./ThemeToggle";
 import "./App.css";
 
 /* =========================================================
@@ -448,6 +449,8 @@ export default function App() {
               specific.
             </p>
           </div>
+
+          <ThemeToggle />
         </header>
 
 

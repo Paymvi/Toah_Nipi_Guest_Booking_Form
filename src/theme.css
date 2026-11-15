@@ -1,0 +1,149 @@
+/* =========================================================
+   Night theme tokens
+   Copied from the booking software's src/styles/theme.css (same names
+   and values), trimmed to the tokens this form uses.
+   Light is the default. Every stylesheet wraps a color in one of these
+   tokens with its Light value as the var() fallback. The tokens exist
+   only while <html data-theme="night"> is set, so Light always uses the
+   value written next to the token. They sit inside @media screen so
+   printing gets those Light values whichever theme is on screen.
+   src/theme.test.js fails if a stylesheet uses a token not defined here.
+========================================================= */
+
+:root {
+  color-scheme: light;
+}
+
+@media screen {
+  :root[data-theme="night"] {
+    color-scheme: dark;
+
+    /* Surfaces, darkest to lightest */
+    --n-page: #15171e;
+    --n-surface: #1c1f28;
+    --n-surface-2: #21242f;
+    --n-surface-3: #2a2e3b;
+    --n-surface-4: #363b4a;
+
+    /* Text */
+    --n-text: #e6e8ee;
+    --n-text-2: #bcc2ce;
+    --n-text-3: #9ea5b4;
+
+    /* Lines */
+    --n-line: #2c303c;
+    --n-line-2: #383d4b;
+    --n-line-4: #6a7284;
+    --n-field-line: #5c6476;
+
+    /* Depth */
+    --n-shadow-1: rgba(0, 0, 0, 0.28);
+    --n-shadow-2: rgba(0, 0, 0, 0.4);
+
+    /* Brand purple as a filled control; white text stays above 4.5:1 */
+    --n-accent-solid: #5a4fc4;
+    --n-accent-solid-hover: #6a5fd6;
+
+    /* Each hue: bg = tinted panel, bg-2 = stronger tint, line = its border,
+       text = readable on any surface above, ring = translucent wash or glow */
+    --n-violet-bg: #262440;
+    --n-violet-line: #4a4580;
+    --n-violet-text: #bdb5f7;
+    --n-violet-ring: rgba(170, 160, 245, 0.2);
+
+    --n-green-bg: #1a2f24;
+    --n-green-line: #38634b;
+    --n-green-text: #93d6ac;
+
+    --n-amber-bg: #33290f;
+    --n-amber-line: #6e5a24;
+    --n-amber-text: #ecc86f;
+
+    --n-red-bg: #3a2023;
+    --n-red-bg-2: #4f2b2f;
+    --n-red-line: #7a4146;
+    --n-red-text: #f5a9a9;
+  }
+}
+
+/* =========================================================
+   Theme toggle (form header)
+   Same look as the booking software's sidebar toggle.
+========================================================= */
+
+.theme-toggle {
+  display: flex;
+  flex: 0 0 auto;
+  align-self: flex-start;
+  gap: 2px;
+  width: 168px;
+  margin: 0 0 0 auto;
+  padding: 2px;
+  border: 1px solid var(--n-line-2, #dfe4ec);
+  border-radius: 8px;
+  background: var(--n-page, #f6f7f9);
+}
+
+.theme-toggle label {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 6px;
+  color: var(--n-text-3, #5f6877);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.theme-toggle label:hover {
+  color: var(--n-text, #252936);
+}
+
+.theme-toggle input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.theme-toggle svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.theme-toggle label:has(input:checked) {
+  background: var(--n-surface-4, #ffffff);
+  color: var(--n-violet-text, #443a9c);
+  box-shadow: 0 1px 2px var(--n-shadow-2, rgba(28, 35, 52, 0.14));
+}
+
+.theme-toggle label:has(input:focus-visible) {
+  outline: 2px solid var(--n-violet-text, #443a9c);
+  outline-offset: 1px;
+}
+
+/* Phones: icons only, like the booking software's collapsed sidebar. */
+@media (max-width: 650px) {
+  .theme-toggle {
+    width: 68px;
+  }
+
+  .theme-toggle label > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+}

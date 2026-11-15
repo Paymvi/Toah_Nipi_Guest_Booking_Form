@@ -16,6 +16,15 @@ npm run build   # production build in dist/
 Set `VITE_GUEST_INQUIRY_ENDPOINT` (for example in `.env.local`) to the URL that receives the form as a JSON `POST`.
 Without it, the form shows an error instead of sending.
 
+## Light and Night themes
+
+Same system as the booking software (see its `docs/THEMING.md`). Light is the default. Night is a choice saved in the browser under `toahNipiTheme`, set with the toggle in the form header. There is no automatic or system option.
+
+- `index.html` sets `data-theme` on `<html>` before the page draws, so a saved Night choice never flashes Light.
+- `src/theme.css` defines the `--n-*` Night tokens, only for `[data-theme="night"]` and only on screen, so printing is always Light.
+- Write every color as `var(--n-token, lightValue)`, e.g. `color: var(--n-text-2, #697088)`. Solid purple fills with white text stay plain colors in both themes.
+- `npm test` fails if a stylesheet uses a token that `theme.css` doesn't define.
+
 ## What the server must do
 
 `VITE_` values are built into the public JavaScript, so anyone can find the endpoint and POST to it directly, skipping this form.
