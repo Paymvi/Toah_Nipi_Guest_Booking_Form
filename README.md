@@ -33,4 +33,5 @@ The browser checks are only for the guest's convenience. The server that receive
 - Run the same checks as `validateForm` in `src/formLogic.js` (required fields, email format, whole-number counts, dates in order, stay of at most 60 days, activity dates inside the stay).
 - Reject requests that include a non-empty `website` field (the hidden honeypot).
 - Rate-limit requests per IP address.
+- Ignore a request whose `submissionId` it has already saved. A guest who retries after a timeout sends the same ID again.
 - Answer within 15 seconds; the form gives up after that and shows an error.
