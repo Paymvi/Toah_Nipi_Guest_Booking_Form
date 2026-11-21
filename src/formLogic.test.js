@@ -58,3 +58,20 @@ test("payload sends only meals inside the stay, and blanks as null", () => {
   assert.equal(payload.approxAdultGuests, null);
   assert.deepEqual(payload.allergies, [{ count: 2, name: "Vegan" }]);
 });
+
+test("an allergy count without a name is refused, so it is not silently dropped", () => {
+  const errors = validateForm(valid({ allergies: [{ count: "3", name: "" }] }));
+  assert.match(errors.join(), /Allergy 1: please name/);
+  assert.deepEqual(validateForm(valid({ allergies: [{ count: "", name: "" }] })), []);
+});
+
+test("an activity without a date is refused", () => {
+  const activities = [{ date: "", time: "09:30", activity: "Kayaking" }];
+  assert.match(validateForm(valid({ activities })).join(), /Activity 1: please choose a date/);
+  assert.deepEqual(validateForm(valid({ activities: [{ date: "", time: "", activity: "" }] })), []);
+});
+
+test("a negative deposit is refused", () => {
+  assert.match(validateForm(valid({ depositAmount: "-5" })).join(), /Deposit Amount cannot be negative/);
+  assert.deepEqual(validateForm(valid({ depositAmount: "0" })), []);
+});

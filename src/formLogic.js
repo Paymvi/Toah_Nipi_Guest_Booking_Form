@@ -212,6 +212,8 @@ export function getGuestBreakdownTotal(formData) {
   return values.reduce((total, value) => total + Number(value || 0), 0);
 }
 
+export const getNumberOfNights = (stayDates) => (stayDates.length > 0 ? stayDates.length - 1 : null);
+
 /* =========================================================
    VALIDATION
 ========================================================= */
@@ -240,6 +242,13 @@ export function validateForm(formData) {
       errors.push("Every activity date must be between the arrival and departure dates.");
     }
   }
+
+  // The payload keeps any row with something in it, so a dateless activity would reach staff undated.
+  formData.activities.forEach((activity, index) => {
+    if ((activity.activity || activity.time) && !activity.date) {
+      errors.push(`Activity ${index + 1}: please choose a date.`);
+    }
+  });
 
   const email = formData.email.trim();
   if (!email) {
@@ -271,6 +280,13 @@ export function validateForm(formData) {
     const number = Number(String(value).trim());
     if (!Number.isInteger(number) || number < min) {
       errors.push(`${label} must be a whole number of ${min} or greater.`);
+    }
+  });
+
+  // The server drops allergy rows without a name, so a lone count would be lost.
+  formData.allergies.forEach((allergy, index) => {
+    if (!isBlank(allergy.count) && isBlank(allergy.name)) {
+      errors.push(`Allergy ${index + 1}: please name the allergy or dietary need.`);
     }
   });
 
@@ -315,7 +331,7 @@ export function buildPayload(formData) {
     approxAdultGuests: numOrNull(formData.approxAdultGuests),
     approxChildren3to17: numOrNull(formData.approxChildren3to17),
     approxChildrenUnder3: numOrNull(formData.approxChildrenUnder3),
-    numberOfNights: stayDates.length > 0 ? stayDates.length - 1 : null,
+    numberOfNights: getNumberOfNights(stayDates),
 
     contractReturnedDate: formData.contractReturnedDate,
     // Guest terminology: "sent", not "received". Staff review these before converting.
